@@ -12,7 +12,7 @@ ID_INSTANCE = "7107627485"
 API_TOKEN = "f713ce355f10440daad6476608772436828b8f6b02c74a09a8"
 API_URL = "https://7107.api.greenapi.com"
 
-MESSAGE_TEMPLATE = "Your form has been submitted successfully. We'll be in touch with you very shortly.\n— ELECSY Team"
+MESSAGE_TEMPLATE = "Your form has been submitted successfully.\nPkg: {package_name}\n\nWe'll be in touch with you very shortly.\n— ELECSY Team"
 
 def get_processed_ids_from_db():
     """Database theke processed IDs gulo niye ashe"""
@@ -34,7 +34,7 @@ def save_processed_id_to_db(submission_id):
     except Exception as e:
         print(f"⚠️ Error saving processed ID to DB: {e}")
 
-def send_whatsapp_api(phone):
+def send_whatsapp_api(phone, package_name):
     """Eita background e message pathabe, browser lagbe na"""
     try:
         # Phone number clean kora
@@ -47,14 +47,17 @@ def send_whatsapp_api(phone):
         
         url = f"{API_URL}/waInstance{ID_INSTANCE}/sendMessage/{API_TOKEN}"
         
+        # Format message with package name
+        formatted_message = MESSAGE_TEMPLATE.format(package_name=package_name)
+        
         payload = {
             "chatId": f"{phone}@c.us",
-            "message": MESSAGE_TEMPLATE
+            "message": formatted_message
         }
         
         headers = {'Content-Type': 'application/json'}
         
-        print(f"Sending auto-msg to: {phone}...")
+        print(f"Sending auto-msg to: {phone} (Pkg: {package_name})...")
         response = requests.post(url, json=payload, headers=headers)
         
         if response.status_code == 200:
@@ -84,8 +87,9 @@ def main():
                     for sub_id, info in data.items():
                         if sub_id not in processed_ids:
                             phone = info.get("phone")
+                            package_name = info.get("package", "N/A")
                             if phone:
-                                success = send_whatsapp_api(phone)
+                                success = send_whatsapp_api(phone, package_name)
                                 if success:
                                     save_processed_id_to_db(sub_id)
                                     time.sleep(2) # Flood protection
